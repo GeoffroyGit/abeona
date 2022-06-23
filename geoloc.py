@@ -1,42 +1,67 @@
 import pandas as pd
-import requests as rq
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 class GeoLoc():
     '''
-    Give it a list of locations (countries, cities, etc)
-    and it will return a panda dataframe with your locations
-    together with their longitude and latitude coordinates.
+    Takes a pandas dataframe with at least two columns:
+    - location
+    - indicator
+    Returns a geopandas geodataframe with four columns:
+    - location
+    - mean(indicator)
+    - country
+    - geometry
+    Use the .plot() method to plot the world map
     '''
-    def __init__(self):
-        self.url = "https://nominatim.openstreetmap.org"
+    def __init__(self, df_data):
+        self.df_data = df_data[["location", "indicator"]]\
+            .groupby("location", as_index=False)\
+                .mean()\
+                    .reset_index()
+        self.df_world = gpd.read_file(gpd.datasets\
+            .get_path('naturalearth_lowres'))[["name", "geometry"]]\
+                .rename(columns={"name" : "country"})
+        self.df_world = self.df_world[self.df_world["country"] != "Antarctica"]
 
-    def locate(self, locations):
-        df = pd.DataFrame({"loc" : locations})
-        # try to minimize the API calls in case locations are repeated
-        unique_locations = list(df["loc"].unique())
-        locations_found = []
-        longitudes = []
-        latitudes = []
-        for location in unique_locations:
-            # geoloc API call
-            params = {"q": location, 'format': 'json'}
-            response = rq.get(self.url, params=params)
-            if response.status_code == 200:
-                if len(response.json()) > 0:
-                    response = response.json()[0]
-                    longitudes.append(float(response.get("lon", 0.0)))
-                    latitudes.append(float(response.get("lat", 0.0)))
-                    locations_found.append(location)
-        # store longitudes and latitudes in a dataframe
-        df_lon_lat = pd.DataFrame({
-            "loc" : locations_found,
-            "lon" : longitudes,
-            "lat" : latitudes
-        })
-        return df.merge(df_lon_lat, how="left", on="loc")
+    def locate(self):
+        # geocoding (API call)
+        df_geocode = gpd.tools.geocode(
+            self.df_data["location"],
+            provider="nominatim",
+            user_agent="wagon"
+            )[["geometry"]].reset_index()
+        # merge with self.df_data
+        df_data_code = df_geocode.merge(
+            self.df_data,
+            how="inner",
+            on="index"
+            ).drop(columns="index")
+        # merge data with world map
+        return self.df_world.sjoin(
+            df_data_code,
+            how="left",
+            predicate="intersects"
+            ).drop(columns="index_right")
+
+    def plot(self):
+        df = self.locate()
+        # plot the world map
+        ax = df.plot("indicator",
+                    legend=True,
+                    missing_kwds={"color" : "lightgrey"},
+                    figsize=(14, 14),
+                    cmap="autumn",
+                    scheme="quantiles")
+        ax.set_axis_off()
+        return ax
 
 
 if __name__ == '__main__':
-    countries = ["France", "Singapore", "Santiago"]
-    geo_locator = GeoLoc()
-    print(geo_locator.locate(countries))
+    df = pd.DataFrame({
+        "location" : ["Nantes", "Singapore", "Santiago", "New York", "Tokyo", "London", "Barcelona", "Nantes"],
+        "indicator" : [7.0, 6.5, 5.5, 5.0, 4.7, 2.3, 1.0, 8.0]
+    })
+    geo_locator = GeoLoc(df)
+    print(geo_locator.locate()) # if not for debug, you can directly call geo_locator.plot()

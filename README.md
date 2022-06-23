@@ -1,19 +1,82 @@
 # What is this all about?
 
-So far this code simply fetches longitude and latitude from OpenStreeMap API.
+From a table containing location names (countries, cities, addresses, etc) and an indicator (a numerical value) for each location, this code creates a world map with each country colored according to the indicator.
 
-It can be used to easily place data on map when we just have a list of names.
+# Special thanks to GeoPandas
 
-For example if I only have a list of country names, I can now easily display them according to their location on the planet.
+This code uses [GeoPandas](https://geopandas.org) 🤩
 
-# Further development
+# Run my code yourself
 
-The more general idea is to also generate the map itself.
+## Install
 
-From a list of country names, I'd like to create a world map highlighting these countries.
+Clone the project:
 
-Furthermore, from a pandas dataframe containing country names and a value for each country, let's say population size, I'd like to return a world map with each country colored according to the population size.
+```bash
+git clone git@github.com:GeoffroyGit/abeona.git
+```
 
-I'd like this to work for any name (country name, city name, etc) and any value.
+I recommend you to create a fresh virtual environment
 
-It seems that I could make use of GeoPandas 🤩
+Create a python3 virtualenv and activate it:
+
+```bash
+cd abeona
+pyenv virtualenv abeona
+pyenv local abeona
+```
+
+Upgrade pip if needed:
+
+```bash
+pip install --upgrade pip
+```
+
+Install the dependancies:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Run in a notebook
+
+Create a Jupyter notebook
+
+```bash
+jupyter notebook
+```
+
+Inside your notebook, run the following python code
+
+Import GeoLoc
+
+```python
+from geoloc import GeoLoc
+```
+
+Open your pandas dataframe
+
+```python
+df = pd.read_csv("/path/to/your/file.csv")
+```
+
+or create a dummy dataframe
+
+```python
+df = pd.DataFrame({
+        "location" : ["Nantes", "Singapore", "Santiago", "New York", "Tokyo", "London", "Barcelona", "Nantes"],
+        "indicator" : [7.0, 6.5, 5.5, 5.0, 4.7, 2.3, 1.0, 8.0]
+    })
+```
+
+Create an instance of the class GeoLoc
+
+```python
+geo_locator = GeoLoc(df)
+```
+
+Finally, plot the world map
+
+```python
+geo_locator.plot();
+```
