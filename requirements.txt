@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+jupyter
+geopandas
+mapclassify
+folium
+rtree
+geopy
