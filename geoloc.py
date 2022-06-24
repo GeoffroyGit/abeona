@@ -55,7 +55,8 @@ class GeoLoc():
                     cmap="autumn",
                     scheme="quantiles")
         ax.set_axis_off()
-        return ax
+        df_clean = df[~df["location"].isnull()]
+        return df_clean, ax
 
 
 if __name__ == '__main__':
